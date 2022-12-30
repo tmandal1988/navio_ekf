@@ -96,13 +96,13 @@ MatrixInv<float> ImuHelper::GetMag3DTo2DProj(float roll, float pitch){
 float* ImuHelper::GetImuData(){
 	ReadRawImu();
 
-	MatrixInv<float> correctd_mag = CorrectMagData( MatrixInv<float>({ {mag_[0]}, 
+	MatrixInv<float> corrected_mag = CorrectMagData( MatrixInv<float>({ {mag_[0]}, 
 																	  {mag_[1]},
 																	  {mag_[2]} }) );
 	for(size_t imu_idx = 0; imu_idx < 3; imu_idx++){
 		imu_data_[imu_idx] = gyro_[imu_idx];
 		imu_data_[imu_idx + 3] = accel_[imu_idx];
-		imu_data_[imu_idx + 6] = correctd_mag(imu_idx);
+		imu_data_[imu_idx + 6] = corrected_mag(imu_idx);
 	}
 
 	return imu_data_;

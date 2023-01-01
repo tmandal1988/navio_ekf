@@ -4,15 +4,6 @@ template <typename T>
 Ekf16DofQuat<T>::Ekf16DofQuat(T sample_time_s, MatrixInv<T> initial_state, MatrixInv<T> process_noise_q, MatrixInv<T> meas_noise_r, MatrixInv<T> initial_covariance_p):
 			EkfBase<T>(NUM_STATES, NUM_MEAS, NUM_STATES_SENSOR, sample_time_s, initial_state, process_noise_q, meas_noise_r, initial_covariance_p){	
 
-	this->meas_jacobian_(0, 2) = 1;
-	this->meas_jacobian_(1, 6) = 1;
-	this->meas_jacobian_(2, 7) = 1;
-	this->meas_jacobian_(3, 8) = 1;
-	this->meas_jacobian_(4, 9) = 1;
-	this->meas_jacobian_(5, 10) = 1;
-	this->meas_jacobian_(6, 11) = 1;
-
-
 	g_ = MatrixInv<T>(3, 1);
 	g_(2) = 9.81;
 }
@@ -241,7 +232,48 @@ void Ekf16DofQuat<T>::GetMeas(MatrixInv<T> meas_sensor_val){
 
 template <typename T>
 void Ekf16DofQuat<T>::ComputeMeasJacobian(MatrixInv<T> meas_sensor_val){
-	// Do nothing
+	// Easy to use names
+	T q0 	= this->time_propagated_state_(0);
+	T q1 	= this->time_propagated_state_(1);
+	T q2 	= this->time_propagated_state_(2);
+	T q3 	= this->time_propagated_state_(3);
+
+	T magnetic_declination = 13.01*DEG2RAD; // this can be an input later
+	T sin_md = sin(magnetic_declination);
+	T cos_md = cos(magnetic_declination);
+
+	// 1st row	
+	this->meas_jacobian_(0, 0) = 2*q3*sin_md;
+	this->meas_jacobian_(0, 1) = 2*q2*sin_md;
+	this->meas_jacobian_(0, 2) = 2*q1*sin_md  - 4*q2*cos_md;
+	this->meas_jacobian_(0, 3) = 2*q0*sin_md  - 4*q3*cos_md;
+
+	//2nd row
+	this->meas_jacobian_(1, 0) = -2*q3*cos_md;
+	this->meas_jacobian_(1, 1) = 2*q2*cos_md - 4*q1*sin_md;
+	this->meas_jacobian_(1, 2) = 2*q1*cos_md;
+	this->meas_jacobian_(1, 3) = -2*q0*cos_md - 4*q3*sin_md;
+
+	//3rd row
+	this->meas_jacobian_(2, 0) = 2*q2*cos_md - 2*q1*sin_md;
+	this->meas_jacobian_(2, 1) = 2*q3*cos_md - 2*q0*sin_md;
+	this->meas_jacobian_(2, 2) = 2*q0*cos_md + 2*q3*sin_md;
+	this->meas_jacobian_(2, 3) = 2*q1*cos_md + 2*q2*sin_md
+
+
+	//4th row
+	this->meas_jacobian_(3, 7) = 1;
+	//5th row
+	this->meas_jacobian_(4, 8) = 1;
+	//6th row
+	this->meas_jacobian_(5, 9) = 1;
+
+	//7th row
+	this->meas_jacobian_(6, 10) = 1;
+	//8th row
+	this->meas_jacobian_(7, 11) = 1;
+	//9th row
+	this->meas_jacobian_(8, 12) = 1;
 }
 
 template <typename T>
@@ -250,7 +282,7 @@ void Ekf16DofQuat<T>::ComputeMeasNoiseJacobian(MatrixInv<T> meas_sensor_val){
 }
 
 template <typename T>
-inline void Ekf16DofQuat<T>::ComputeMeasFromState(MatrixInv<T> time_propagated_state){
+void Ekf16DofQuat<T>::ComputeMeasFromState(MatrixInv<T> time_propagated_state){
 
 	// Easy to use names
 	T q0 	= this->time_propagated_state_(0);
@@ -277,6 +309,16 @@ inline void Ekf16DofQuat<T>::ComputeMeasFromState(MatrixInv<T> time_propagated_s
 		this->meas_from_propogated_state_(idx + 3) = this->time_propagated_state_(7 + idx);
 		this->meas_from_propogated_state_(idx + 6) = this->time_propagated_state_(10 + idx);
 	}
+}
+
+template <typename T>
+void Ekf16DofQuat<T>::Run(MatrixInv<T> state_sensor_val, MatrixInv<T> meas_sensor_val, bool meas_indices[]){
+	// Call the base class run method
+	EkfBase::Run(state_sensor_val, meas_sensor_val, meas_indices);
+	//Normalize the quaternion
+	T quat_mag = sqrt( pow(this->current_state_(0), 2) + pow(this->current_state_(1), 2) + pow(this->current_state_(1), 2) + pow(this->current_state_(3), 2) );
+	for(size_t idx = 0; idx < 4; idx++)
+		this->current_state_(idx) = this->current_state_(idx)/quat_mag;
 }
 
 // Explicit template instantiation

@@ -321,6 +321,35 @@ void Ekf16DofQuat<T>::Run(MatrixInv<T> state_sensor_val, MatrixInv<T> meas_senso
 		this->current_state_(idx) = this->current_state_(idx)/quat_mag;
 }
 
+template <typename T>
+MatrixInv<T> Ekf16DofQuat<T>::GetEulerAngle(){
+	MatrixInv<T> euler_ang(3, 1);
+	// Easy to use names
+	T q0 	= this->current_state_(0);
+	T q1 	= this->current_state_(1);
+	T q2 	= this->current_state_(2);
+	T q3 	= this->current_state_(3);
+
+	MatrixInv<T> c_ned2b 	= { { 1 - 2*( pow(q2, 2) + pow(q3,2) ), 2*( q1*q2 + q3*q0 ), 2*( q1*q3 - q2*q0 ) },
+								{ 2*( q1*q2 - q3*q0 ), 1 - 2*( pow(q1, 2) + pow(q3, 2) ), 2*( q2*q3 + q1*q0 ) },
+								{ 2*( q1*q3 + q2*q0 ), 2*( q2*q3 - q1*q0 ), 1 - 2*( pow(q1, 2) + pow(q2,2) ) } };
+
+	euler_ang(0)  			= atan2( C_ned2b(1, 2), C_ned2b(2, 2) );
+    euler_ang(1) 			= asin( -C_ned2b(0, 2) );
+    euler_ang(2)   			= tan2( C_ned2b(0, 1), C_ned2b(0, 0) );
+
+    if ( abs( C_ned2b(0, 2) ) > 1 - 1e-8 ){
+        //Pitch=+/-90deg case.  Underdetermined, so assume roll is zero,
+        //and solve for pitch and yaw as follows:
+        euler_ang(0)   	= 0;
+        euler_ang(1)  	= atan2( -C_ned2b(0, 2), C_ned2b(2, 2) );
+        euler_ang(2)   	= atan2( -C_ned2b(1, 0), C_ned2b(1, 1) );
+    }
+
+    return euler_ang;
+
+}
+
 // Explicit template instantiation
 template class Ekf16DofQuat<float>;
 template class Ekf16DofQuat<double>;

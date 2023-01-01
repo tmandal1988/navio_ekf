@@ -36,6 +36,12 @@ class Ekf16DofQuat:public EkfBase<T>{
 		// constructors
 		Ekf16DofQuat(T sample_time_s, MatrixInv<T> initial_state, MatrixInv<T> process_noise_q, MatrixInv<T> meas_noise_r, MatrixInv<T> initial_covariance_p);
 
+		// Run method specific to this EKF formulation
+		void Run(MatrixInv<T> state_sensor_val, MatrixInv<T> meas_sensor_val, bool meas_indices[]);
+
+		// Method to get Eulr angle from quaternion
+		MatrixInv<T> GetEulerAngle();
+
 		// destructor
 		~Ekf16DofQuat();	
 

@@ -17,7 +17,7 @@ set(PROJECT_SOURCE_DIR
 )
 
 set(PROJECT_SOURCE
-    ${PROJECT_SOURCE_DIR}/ekf_example.cc
+    ${PROJECT_SOURCE_DIR}/ekf_example_quat.cc
 )
 
 set(PROJECT_LIBRARIES_DIR

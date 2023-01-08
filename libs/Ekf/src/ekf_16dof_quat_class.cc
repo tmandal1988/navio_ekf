@@ -336,7 +336,7 @@ MatrixInv<T> Ekf16DofQuat<T>::GetEulerAngle(){
 
 	euler_ang(0)  			= atan2( C_ned2b(1, 2), C_ned2b(2, 2) );
     euler_ang(1) 			= asin( -C_ned2b(0, 2) );
-    euler_ang(2)   			= tan2( C_ned2b(0, 1), C_ned2b(0, 0) );
+    euler_ang(2)   			= atan2( C_ned2b(0, 1), C_ned2b(0, 0) );
 
     if ( abs( C_ned2b(0, 2) ) > 1 - 1e-8 ){
         //Pitch=+/-90deg case.  Underdetermined, so assume roll is zero,

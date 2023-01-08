@@ -31,11 +31,11 @@ void Ekf16DofQuat<T>::PropagateState(MatrixInv<T> state_sensor_val){
 	MatrixInv<T> propogated_quat(4, 1);
 	MatrixInv<T> propogated_velocity(3, 1);
 
-	MatrixInv<T> body_rates_2_quat_rates = { {-q1  -q2  -q3}, {q0  -q3   q2}, {q3   q0  -q1}, {-q2   q1   q0} };
+	MatrixInv<T> body_rates_2_quat_rates = { {-q1, -q2, -q3}, {q0, -q3, q2}, {q3, q0, -q1}, {-q2, q1, q0} };
 
-	MatrixInv<T> c_b2ned = { { 1 - 2*( pow(q2, 2) + pow(q3,2) ), 2*( q1*q2 - q3*q0 ), 2*( q1*q3 + q2*q0 ) },
-								   { 2*( q1*q2 + q3*q0 ), 1 - 2*( pow(q1, 2) + pow(q3, 2) ), 2*( q2*q3 - q1*q0 ) },
-								   {2*( q1*q3 - q2*q0 ), 2*( q2*q3 + q1*q0 ), 1 - 2*( pow(q1, 2) + pow(q2,2) ) } };
+	MatrixInv<T> c_b2ned = { { static_cast<T>( 1 - 2.0*( pow(q2, 2) + pow(q3, 2) ) ), 2*( q1*q2 - q3*q0 ), 2*( q1*q3 + q2*q0 ) },
+								   { 2*( q1*q2 + q3*q0 ), static_cast<T>( 1 - 2.0*( pow(q1, 2) + pow(q3, 2) ) ), 2*( q2*q3 - q1*q0 ) },
+								   {2*( q1*q3 - q2*q0 ), 2*( q2*q3 + q1*q0 ), static_cast<T>( 1 - 2.0*( pow(q1, 2) + pow(q2, 2) ) ) } };
 
 	MatrixInv<T> angular_rate_vector = { {state_sensor_val(0) - this->current_state_(4)},
 										{state_sensor_val(1) - this->current_state_(5)},
@@ -45,7 +45,8 @@ void Ekf16DofQuat<T>::PropagateState(MatrixInv<T> state_sensor_val){
 								  {state_sensor_val(5) - this->current_state_(15)} };
 
 
-	propogated_quat = 0.5*body_rates_2_quat_rates*angular_rate_vector*dt;
+	propogated_quat = (body_rates_2_quat_rates*angular_rate_vector);
+	//propogated_quat = 0.5*dt*(body_rates_2_quat_rates*angular_rate_vector);
 
 	propogated_velocity = (c_b2ned*accel_vector + g_)*dt;
 
@@ -169,23 +170,23 @@ void Ekf16DofQuat<T>::ComputeStateJacobian(MatrixInv<T> state_sensor_val){
 	this->state_jacobian_(9, 12) = this->sample_time_s_;
 
 	//11th row
-	this->state_jacobian_(10, 0) = dt*( 2*q3*(bay - fy) - 2*q2*(baz - fz) );
-	this->state_jacobian_(10, 1) = dt*( -2*q2*(bay - fy) - 2*q3*(baz - fz) );
-	this->state_jacobian_(10, 2) = dt*( 4*q2*(bax - fx) - 2*q1*(bay - fy) - 2*q0*(baz - fz) );
-	this->state_jacobian_(10, 3) = dt*( 2*q0*(bay - fy) + 4*q3*(bax - fx) - 2*q1*(baz - fz) );
+	this->state_jacobian_(10, 0) = dt*( 2*q3*(bay - ay) - 2*q2*(baz - az) );
+	this->state_jacobian_(10, 1) = dt*( -2*q2*(bay - ay) - 2*q3*(baz - az) );
+	this->state_jacobian_(10, 2) = dt*( 4*q2*(bax - ax) - 2*q1*(bay - ay) - 2*q0*(baz - az) );
+	this->state_jacobian_(10, 3) = dt*( 2*q0*(bay - ay) + 4*q3*(bax - ax) - 2*q1*(baz - az) );
 
 	this->state_jacobian_(10, 10) = 1;
 
-	this->state_jacobian_(10, 13) = dt*(2*pow(q2, 2) + 2*pow(q3, 2) - 1)
+	this->state_jacobian_(10, 13) = dt*(2*pow(q2, 2) + 2*pow(q3, 2) - 1);
 	this->state_jacobian_(10, 14) = dt*(2*q0*q3 - 2*q1*q2);
 	this->state_jacobian_(10, 15) = dt*(-2*q0*q2 - 2*q1*q3);
 
 
 	//12th row
-	this->state_jacobian_(11, 0) = dt*( 2*q1*(baz - fz) - 2*q3*(bax - fx) );
-	this->state_jacobian_(11, 1) = dt*( 4*q1*(bay - fy) - 2*q2*(bax - fx) + 2*q0*(baz - fz) );
-	this->state_jacobian_(11, 2) = dt*( -2*q1*(bax - fx) - 2*q3*(baz - fz) );
-	this->state_jacobian_(11, 3) = dt*( 4*q3*(bay - fy) - 2*q0*(bax - fx) - 2*q2*(baz - fz) )
+	this->state_jacobian_(11, 0) = dt*( 2*q1*(baz - az) - 2*q3*(bax - ax) );
+	this->state_jacobian_(11, 1) = dt*( 4*q1*(bay - ay) - 2*q2*(bax - ax) + 2*q0*(baz - az) );
+	this->state_jacobian_(11, 2) = dt*( -2*q1*(bax - ax) - 2*q3*(baz - az) );
+	this->state_jacobian_(11, 3) = dt*( 4*q3*(bay - ay) - 2*q0*(bax - ax) - 2*q2*(baz - az) );
 
 	this->state_jacobian_(11, 11) = 1;
 
@@ -194,10 +195,10 @@ void Ekf16DofQuat<T>::ComputeStateJacobian(MatrixInv<T> state_sensor_val){
 	this->state_jacobian_(11, 15) = dt*(2*q0*q1 - 2*q2*q3);
 
 	//13th row
-	this->state_jacobian_(12, 0) = dt*( 2*q2*(bax - fx) - 2*q1*(bay - fy) );
-	this->state_jacobian_(12, 1) = dt*( 4*q1*(baz - fz) - 2*q3*(bax - fx) - 2*q0*(bay - fy) );
-	this->state_jacobian_(12, 2) = dt*( 2*q0*(bax - fx) - 2*q3*(bay - fy) + 4*q2*(baz - fz) );
-	this->state_jacobian_(12, 3) = dt*( -2*q1*(bax - fx) - 2*q2*(bay - fy) );
+	this->state_jacobian_(12, 0) = dt*( 2*q2*(bax - ax) - 2*q1*(bay - ay) );
+	this->state_jacobian_(12, 1) = dt*( 4*q1*(baz - az) - 2*q3*(bax - ax) - 2*q0*(bay - ay) );
+	this->state_jacobian_(12, 2) = dt*( 2*q0*(bax - ax) - 2*q3*(bay - ay) + 4*q2*(baz - az) );
+	this->state_jacobian_(12, 3) = dt*( -2*q1*(bax - ax) - 2*q2*(bay - ay) );
 
 	this->state_jacobian_(12, 12) = 1;
 
@@ -258,7 +259,7 @@ void Ekf16DofQuat<T>::ComputeMeasJacobian(MatrixInv<T> meas_sensor_val){
 	this->meas_jacobian_(2, 0) = 2*q2*cos_md - 2*q1*sin_md;
 	this->meas_jacobian_(2, 1) = 2*q3*cos_md - 2*q0*sin_md;
 	this->meas_jacobian_(2, 2) = 2*q0*cos_md + 2*q3*sin_md;
-	this->meas_jacobian_(2, 3) = 2*q1*cos_md + 2*q2*sin_md
+	this->meas_jacobian_(2, 3) = 2*q1*cos_md + 2*q2*sin_md;
 
 
 	//4th row
@@ -290,16 +291,16 @@ void Ekf16DofQuat<T>::ComputeMeasFromState(MatrixInv<T> time_propagated_state){
 	T q2 	= this->time_propagated_state_(2);
 	T q3 	= this->time_propagated_state_(3);
 
-	MatrixInv<T> c_ned2b = { { 1 - 2*( pow(q2, 2) + pow(q3,2) ), 2*( q1*q2 + q3*q0 ), 2*( q1*q3 - q2*q0 ) },
-								   { 2*( q1*q2 - q3*q0 ), 1 - 2*( pow(q1, 2) + pow(q3, 2) ), 2*( q2*q3 + q1*q0 ) },
-								   { 2*( q1*q3 + q2*q0 ), 2*( q2*q3 - q1*q0 ), 1 - 2*( pow(q1, 2) + pow(q2,2) ) } };
+	MatrixInv<T> c_ned2b = { { static_cast<T>( 1 - 2*( pow(q2, 2) + pow(q3,2) ) ), 2*( q1*q2 + q3*q0 ), 2*( q1*q3 - q2*q0 ) },
+								   { 2*( q1*q2 - q3*q0 ), static_cast<T>( 1 - 2*( pow(q1, 2) + pow(q3, 2) ) ), 2*( q2*q3 + q1*q0 ) },
+								   { 2*( q1*q3 + q2*q0 ), 2*( q2*q3 - q1*q0 ), static_cast<T>( 1 - 2*( pow(q1, 2) + pow(q2,2) ) ) } };
 
 
 
 
-	T magnetic_declination = 13.01*DEG2RAD; // this can be an input later
-	matrixInv<T> c_mag2ned = { {cos(-mag_declination_deg), sin(-mag_declination_deg), 0},
-              				   {-sin(-mag_declination_deg), cos(-mag_declination_deg), 0},
+	T mag_declination = 13.01*DEG2RAD; // this can be an input later
+	MatrixInv<T> c_mag2ned = { {cos(-mag_declination), sin(-mag_declination), 0},
+              				   {-sin(-mag_declination), cos(-mag_declination), 0},
                        		   {0                         ,0                         , 0} };
     MatrixInv<T> unit_mag_vector = {{1}, {0}, {0}};
     MatrixInv<T> mag3D_unitVector_in_body = c_ned2b*c_mag2ned*unit_mag_vector;
@@ -314,7 +315,7 @@ void Ekf16DofQuat<T>::ComputeMeasFromState(MatrixInv<T> time_propagated_state){
 template <typename T>
 void Ekf16DofQuat<T>::Run(MatrixInv<T> state_sensor_val, MatrixInv<T> meas_sensor_val, bool meas_indices[]){
 	// Call the base class run method
-	EkfBase::Run(state_sensor_val, meas_sensor_val, meas_indices);
+	EkfBase<T>::Run(state_sensor_val, meas_sensor_val, meas_indices);
 	//Normalize the quaternion
 	T quat_mag = sqrt( pow(this->current_state_(0), 2) + pow(this->current_state_(1), 2) + pow(this->current_state_(1), 2) + pow(this->current_state_(3), 2) );
 	for(size_t idx = 0; idx < 4; idx++)
@@ -330,20 +331,20 @@ MatrixInv<T> Ekf16DofQuat<T>::GetEulerAngle(){
 	T q2 	= this->current_state_(2);
 	T q3 	= this->current_state_(3);
 
-	MatrixInv<T> c_ned2b 	= { { 1 - 2*( pow(q2, 2) + pow(q3,2) ), 2*( q1*q2 + q3*q0 ), 2*( q1*q3 - q2*q0 ) },
-								{ 2*( q1*q2 - q3*q0 ), 1 - 2*( pow(q1, 2) + pow(q3, 2) ), 2*( q2*q3 + q1*q0 ) },
-								{ 2*( q1*q3 + q2*q0 ), 2*( q2*q3 - q1*q0 ), 1 - 2*( pow(q1, 2) + pow(q2,2) ) } };
+	MatrixInv<T> c_ned2b 	= { { static_cast<T>( 1 - 2*( pow(q2, 2) + pow(q3,2) ) ), 2*( q1*q2 + q3*q0 ), 2*( q1*q3 - q2*q0 ) },
+								{ 2*( q1*q2 - q3*q0 ), static_cast<T>( 1 - 2*( pow(q1, 2) + pow(q3, 2) ) ), 2*( q2*q3 + q1*q0 ) },
+								{ 2*( q1*q3 + q2*q0 ), 2*( q2*q3 - q1*q0 ), static_cast<T>( 1 - 2*( pow(q1, 2) + pow(q2,2) ) ) } };
 
-	euler_ang(0)  			= atan2( C_ned2b(1, 2), C_ned2b(2, 2) );
-    euler_ang(1) 			= asin( -C_ned2b(0, 2) );
-    euler_ang(2)   			= atan2( C_ned2b(0, 1), C_ned2b(0, 0) );
+	euler_ang(0)  			= atan2( c_ned2b(1, 2), c_ned2b(2, 2) );
+    euler_ang(1) 			= asin( -c_ned2b(0, 2) );
+    euler_ang(2)   			= atan2( c_ned2b(0, 1), c_ned2b(0, 0) );
 
-    if ( abs( C_ned2b(0, 2) ) > 1 - 1e-8 ){
+    if ( abs( c_ned2b(0, 2) ) > 1 - 1e-8 ){
         //Pitch=+/-90deg case.  Underdetermined, so assume roll is zero,
         //and solve for pitch and yaw as follows:
         euler_ang(0)   	= 0;
-        euler_ang(1)  	= atan2( -C_ned2b(0, 2), C_ned2b(2, 2) );
-        euler_ang(2)   	= atan2( -C_ned2b(1, 0), C_ned2b(1, 1) );
+        euler_ang(1)  	= atan2( -c_ned2b(0, 2), c_ned2b(2, 2) );
+        euler_ang(2)   	= atan2( -c_ned2b(1, 0), c_ned2b(1, 1) );
     }
 
     return euler_ang;

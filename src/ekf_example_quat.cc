@@ -121,10 +121,10 @@ int main(int argc, char *argv[]){
 
 	double* vned_init = gps_reader.GetInitNedVel();	
 
-	initial_state(0) = cos(init_att[2]/2)*cos(init_att[1]/2)*cos(init_att[0]/2) + sin(init_att[2]/2)*sin(init_att[1]/2).*sin(init_att[0]/2);
-  initial_state(1) = cos(init_att[2]/2)*cos(init_att[1]/2)*sin(init_att[0]/2) - sin(init_att[2]/2)*sin(init_att[1]/2).*cos(init_att[0]/2);
-  initial_state(2) = cos(init_att[2]/2)*sin(init_att[1]/2)*cos(init_att[0]/2) + sin(init_att[2]/2)*cos(init_att[1]/2).*sin(init_att[0]/2);
-  initial_state(3) = sin(init_att[2]/2)*cos(init_att[1]/2)*cos(init_att[0]/2) - cos(init_att[2]/2)*sin(init_att[1]/2).*sin(init_att[0]/2);
+	initial_state(0) = cos(init_att[2]/2)*cos(init_att[1]/2)*cos(init_att[0]/2) + sin(init_att[2]/2)*sin(init_att[1]/2)*sin(init_att[0]/2);
+  initial_state(1) = cos(init_att[2]/2)*cos(init_att[1]/2)*sin(init_att[0]/2) - sin(init_att[2]/2)*sin(init_att[1]/2)*cos(init_att[0]/2);
+  initial_state(2) = cos(init_att[2]/2)*sin(init_att[1]/2)*cos(init_att[0]/2) + sin(init_att[2]/2)*cos(init_att[1]/2)*sin(init_att[0]/2);
+  initial_state(3) = sin(init_att[2]/2)*cos(init_att[1]/2)*cos(init_att[0]/2) - cos(init_att[2]/2)*sin(init_att[1]/2)*sin(init_att[0]/2);
 
 	for(size_t i_idx = 0; i_idx < 3; i_idx++){
 		initial_state(i_idx + 10) = vned_init[i_idx];
@@ -185,7 +185,7 @@ int main(int argc, char *argv[]){
 	   	// Run one step of EKF
 	    imu_gps_ekf_quat.Run(state_sensor_val, sensor_meas, meas_indices);
 	    // Get the state after EKF run
-        current_state = imu_gps_ekf.GetCurrentState();
+        current_state = imu_gps_ekf_quat.GetCurrentState();
 
         if(remainder(loop_count, 5) == 0){
         	data_writer.UpdateDataBuffer(duration.count(), loop_count, imu_data, sensor_meas, current_state);
